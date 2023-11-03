@@ -1,3 +1,8 @@
-<%= tinymce_assets %>
-<%= form.text_area field.method_name, field.html_attributes.reverse_merge(data: { richtext: 'tinymce' }).reverse_merge({ value: field.form_value }) %>
-<%= tinymce selector: '[data-richtext=tinymce]' %>
+<%
+  data_attrs = field.html_attributes.fetch('data', {})
+  html_attrs = field.html_attributes.reverse_merge(data: data_attrs.reverse_merge({
+    'tinymce-config' => field.config,
+    'tinymce-options' => field.options.to_json
+  }))
+%>
+<%= form.text_area field.method_name, html_attrs.reverse_merge({ value: field.form_value }) %>

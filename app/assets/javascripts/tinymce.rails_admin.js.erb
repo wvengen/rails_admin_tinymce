@@ -1,0 +1,45 @@
+// assumes we are loaded after TinyMCERails
+<% TinyMCE::Rails.each_configuration do |name, config| %>
+TinyMCERails.configuration.<%= name %> = <%= config.to_javascript %>;
+<% end %>
+
+(function() {
+  function initTinyMCERails() {
+    // get config and options from data attributes
+    document.querySelectorAll('[data-tinymce-config]').forEach(function (el) {
+      var config = el.getAttribute('data-tinymce-config');
+      var options = JSON.parse(el.getAttribute('data-tinymce-options') || '{}');
+      // override selector, we already have the element
+      options.selector = null;
+      options.target = el;
+      TinyMCERails.initialize(config, options);
+    });
+  }
+
+  // Setup TinyMCE after first page load
+  document.addEventListener('DOMContentLoaded', function() {
+    initTinyMCERails();
+  });
+  // Make Turbo work
+  if (typeof Turbo != 'undefined' && Turbo.session.enabled) {
+    // Remove all TinyMCE instances before moving away
+    document.addEventListener('turbo:before-fetch-response', function() {
+      tinymce.remove();
+    });
+    // Reload TinyMCE after new content is loaded
+    document.addEventListener('turbo:load', function() {
+      initTinyMCERails();
+    });
+  }
+  // Make Turbolinks work
+  if (typeof Turbolinks != 'undefined' && Turbolinks.supported) {
+    // Remove all TinyMCE instances before initializing again
+    document.addEventListener('turbolinks:before-render', function() {
+      tinymce.remove();
+    });
+    // Reload TinyMCE after new content is loaded
+    document.addEventListener('turbolinks:load', function() {
+      initTinyMCERails();
+    });
+  }
+})();
