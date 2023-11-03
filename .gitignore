@@ -1,5 +1,5 @@
 /.bundle/
-/.ruby_version
+/.ruby-version
 /doc/
 /log/*.log
 /pkg/
