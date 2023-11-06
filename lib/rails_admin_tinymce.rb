@@ -3,7 +3,9 @@ require "rails_admin_tinymce/engine"
 require "tinymce-rails"
 
 module RailsAdminTinymce
-  # Your code goes here...
+  def self.activestorage_enabled?
+    !!defined?(ActiveStorage)
+  end
 end
 
 require 'rails_admin/config/fields'
