@@ -1,3 +1,8 @@
+<% if RailsAdminTinymce.activestorage_enabled? %>
+// TODO support non-importmap usage
+import { DirectUpload } from '@rails/activestorage';
+<% end %>
+
 // assumes we are loaded after TinyMCERails
 <% TinyMCE::Rails.each_configuration do |name, config| %>
 TinyMCERails.configuration.<%= name %> = <%= config.to_javascript %>;
@@ -12,9 +17,54 @@ TinyMCERails.configuration.<%= name %> = <%= config.to_javascript %>;
       // override selector, we already have the element
       options.selector = null;
       options.target = el;
+      <% if RailsAdminTinymce.activestorage_enabled? %>setActiveStorageOptions(options);<% end %>
       TinyMCERails.initialize(config, options);
     });
   }
+
+<% if RailsAdminTinymce.activestorage_enabled? %>
+  function setActiveStorageOptions(options) {
+    options.images_upload_handler = imagesUploadHandler;
+    options.images_reuse_filename = true;
+  }
+
+  class Uploader {
+    constructor(file, url, progress) {
+      this.progress = progress;
+      this.direct_upload = new DirectUpload(file, url, this);
+    }
+
+    upload() {
+      return new Promise(function (resolve, reject) {
+        this.direct_upload.create(function (error, blob) {
+          if (error) {
+            reject({ message: error });
+          } else {
+            resolve('/rails/active_storage/blobs/' + blob.signed_id + '/' + blob.filename);
+          }
+        }.bind(this));
+      }.bind(this));
+    }
+
+    directUploadWillStoreFileWithXHR(request) {
+      request.upload.addEventListener('progress', function(event) {
+        return this.directUploadDidProgress(event);
+      }.bind(this));
+    }
+
+    directUploadDidProgress(event) {
+      if (this.progress) {
+        this.progress(100 * event.loaded / event.total);
+      }
+    }
+  }
+
+  function imagesUploadHandler(blobInfo, progress) {
+    var directUploadUrl = '/rails/active_storage/direct_uploads';
+    var uploader = new Uploader(blobInfo.blob(), directUploadUrl, progress);
+    return uploader.upload();
+  }
+<% end %>
 
   // Setup TinyMCE after first page load
   document.addEventListener('DOMContentLoaded', function() {
